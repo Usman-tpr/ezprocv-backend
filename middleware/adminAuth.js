@@ -13,13 +13,13 @@ const adminAuth = async (req, res, next) => {
         
         // Populate the role data when fetching the admin
         const admin = await EzAdmin.findById(decoded.adminId).populate('role');
-        console.log('Admin data:', {
-            id: admin._id,
-            name: admin.name,
-            email: admin.email,
-            role: admin.role,
-            isActive: admin.isActive
-        });
+        // console.log('Admin data:', {
+        //     id: admin._id,
+        //     name: admin.name,
+        //     email: admin.email,
+        //     role: admin.role,
+        //     isActive: admin.isActive
+        // });
 
         if (!admin) {
             return res.status(401).json({ message: 'Admin not found' });

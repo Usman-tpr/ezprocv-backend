@@ -4,13 +4,15 @@ const {
     registerUser, 
     loginUser, 
     getUserProfile, 
-    updateUserProfile 
+    updateUserProfile,
+    getTotalUsers
 } = require('../controllers/userController');
 const auth = require('../middleware/auth');
 
 // Public routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.get('/total', getTotalUsers);
 
 // Protected routes
 router.get('/profile', auth, getUserProfile);

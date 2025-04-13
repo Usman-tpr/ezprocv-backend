@@ -1,12 +1,53 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
+const EzUser = require("../../models/EzUser");
+const jwt = require("jsonwebtoken");
+
+// Get total downloads across all users
+const getTotalDownloads = async (req, res) => {
+    try {
+        // Get total downloads by summing noOfDownloadedPdf from all users
+        const result = await EzUser.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalDownloads: { $sum: "$noOfDownloadedPdf" }
+                }
+            }
+        ]);
+
+        const totalDownloads = result[0]?.totalDownloads || 0;
+
+        res.json({
+            totalDownloads,
+            message: "Total downloads retrieved successfully"
+        });
+    } catch (error) {
+        console.error("Error getting total downloads:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+};
 
 const post = async(req , res)=>{
     try {
         const { html } = req.body;
         if (!html) {
           return res.status(400).json({ error: "HTML content is required" });
+        }
+
+        // Get user token from header
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: "Authentication required" });
+        }
+
+        // Verify token and get user
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        const user = await EzUser.findById(decoded.userId);
+        
+        if (!user) {
+            return res.status(401).json({ error: "User not found" });
         }
     
         // Launch Puppeteer
@@ -52,10 +93,12 @@ const post = async(req , res)=>{
     
         // Generate PDF
         const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
-        // fs.writeFileSync("test2.pdf", pdfBuffer);
-        // console.log("PDF saved! Check test.pdf");
         
         await browser.close();
+    
+        // Update user's download count
+        user.noOfDownloadedPdf += 1;
+        await user.save();
     
         // Send the PDF as a response
         res.setHeader("Content-Type", "application/pdf");
@@ -65,9 +108,9 @@ const post = async(req , res)=>{
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");
         
-        res.end(pdfBuffer); // Ensure using `.end()` for binary files
+        res.end(pdfBuffer);
         
-        console.log("PDF Buffer Length:", pdfBuffer.length); // Should not be 0
+        console.log("PDF Buffer Length:", pdfBuffer.length);
         console.log("Sending PDF to frontend...");
             
       } catch (error) {
@@ -77,4 +120,4 @@ const post = async(req , res)=>{
       }
 }
 
-module.exports = { post}
+module.exports = { post, getTotalDownloads }

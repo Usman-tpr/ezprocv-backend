@@ -2,6 +2,21 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const EzUser = require('../models/EzUser');
 
+// Get total number of users
+const getTotalUsers = async (req, res) => {
+    try {
+        const totalUsers = await EzUser.countDocuments();
+        
+        res.json({
+            totalUsers,
+            message: "Total users retrieved successfully"
+        });
+    } catch (error) {
+        console.error('Error getting total users:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Register User
 const registerUser = async (req, res) => {
     console.log(req.body)
@@ -125,9 +140,10 @@ const updateUserProfile = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-
+    console.log(req.body)
         // Update fields
-        if (req.body.name) user.name = req.body.name;
+        if (req.body.firstName) user.firstName = req.body.firstName;
+        if (req.body.lastName) user.lastName = req.body.lastName;
         if (req.body.email) user.email = req.body.email;
         if (req.body.password) {
             const salt = await bcrypt.genSalt(10);
@@ -146,5 +162,6 @@ module.exports = {
     registerUser,
     loginUser,
     getUserProfile,
-    updateUserProfile
+    updateUserProfile,
+    getTotalUsers
 }; 
